@@ -281,11 +281,15 @@ async function sendWebhook(content) {
 /* ============================================================
    СТАРТ
 ============================================================ */
-app.listen(PORT, () => {
-  console.log('═══════════════════════════════════════');
-  console.log(`🚀 ExecChecker запущен!`);
-  console.log(`🌐 Открой: http://localhost:${PORT}`);
-  console.log(`👑 Владелец: ${OWNER_ID}`);
-  console.log(`🔧 Режим: ${process.env.NODE_ENV || 'development'}`);
-  console.log('═══════════════════════════════════════');
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log('═══════════════════════════════════════');
+    console.log(`🚀 ExecChecker запущен!`);
+    console.log(`🌐 Открой: http://localhost:${PORT}`);
+    console.log(`👑 Владелец: ${OWNER_ID}`);
+    console.log(`🔧 Режим: ${process.env.NODE_ENV || 'development'}`);
+    console.log('═══════════════════════════════════════');
+  });
+}
+
+module.exports = app;
