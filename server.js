@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const session = require('express-session');
+const session = require('cookie-session');
 const fetch = require('node-fetch');
 const path = require('path');
 
@@ -81,15 +81,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.set('trust proxy', 1);
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'fallback-secret-change-me',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
-  }
+  name: 'exec-session',
+  keys: [process.env.SESSION_SECRET || 'fallback-secret-change-me'],
+  maxAge: 1000 * 60 * 60 * 24 * 7,
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  overwrite: true
 }));
 
 app.use(express.static(path.join(__dirname, 'public')));
