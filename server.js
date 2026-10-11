@@ -14,7 +14,7 @@ let serviceAccount;
 if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
   try {
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-    console.log('📦 FIREBASE_SERVICE_ACCOUNT_JSON (локальный режим)');
+    console.log('📦 FIREBASE_SERVICE_ACCOUNT_JSON (локально)');
   } catch (e) { console.error('❌ Ошибка парсинга:', e.message); }
 }
 if (!serviceAccount) {
@@ -38,6 +38,43 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 const OWNER_ID = process.env.OWNER_DISCORD_ID;
+
+/* ============================================================
+   КАТАЛОГ МАГАЗИНА
+============================================================ */
+const SHOP_ITEMS = {
+  frames: {
+    bronze:   { name: '🥉 Bronze',   price: 200,  css: 'linear-gradient(135deg,#cd7f32,#8b5a2b)' },
+    silver:   { name: '🥈 Silver',   price: 500,  css: 'linear-gradient(135deg,#c0c0c0,#707070)' },
+    gold:     { name: '🥇 Gold',     price: 1000, css: 'linear-gradient(135deg,#ffd700,#ff8c00)' },
+    diamond:  { name: '💎 Diamond',  price: 2000, css: 'linear-gradient(135deg,#b9f2ff,#7ec8ff)' },
+    rainbow:  { name: '🌈 Rainbow',  price: 3000, css: 'conic-gradient(from 0deg,#ff0000,#ff8800,#ffff00,#00ff00,#0088ff,#8800ff,#ff0000)' },
+    crown:    { name: '👑 Crown',    price: 5000, css: 'linear-gradient(135deg,#ffd700,#ff8c00,#ffd700)' }
+  },
+  colors: {
+    red:      { name: '🔴 Красный',       price: 100,  css: '#ff4444' },
+    green:    { name: '🟢 Зелёный',       price: 100,  css: '#44ff44' },
+    blue:     { name: '🔵 Синий',         price: 100,  css: '#4488ff' },
+    purple:   { name: '🟣 Фиолетовый',    price: 150,  css: '#c39cff' },
+    gold:     { name: '🟡 Золотой',       price: 300,  css: '#ffd700' },
+    rainbow:  { name: '🌈 Радужный',      price: 1000, css: 'rainbow' }
+  },
+  titles: {
+    gamer:    { name: '🎮 Геймер',        price: 400 },
+    fast:     { name: '⚡ Быстрый',        price: 500 },
+    explorer: { name: '🌌 Исследователь', price: 800 },
+    legend:   { name: '🔥 Легенда',       price: 2500 },
+    chosen:   { name: '👑 Избранный',     price: 5000 }
+  }
+};
+
+function getAdminItems() {
+  return {
+    frames: Object.keys(SHOP_ITEMS.frames),
+    colors: Object.keys(SHOP_ITEMS.colors),
+    titles: Object.keys(SHOP_ITEMS.titles)
+  };
+}
 
 /* MIDDLEWARE */
 app.use(express.json());
@@ -121,19 +158,41 @@ app.get('/api/auth/callback', async (req, res) => {
       await userRef.update({ username: discordUser.username, avatar: discordUser.avatar });
     } else {
       const isOwner = discordUser.id === OWNER_ID;
+      const admin = isOwner;
+      const all = getAdminItems();
       userData = {
         discordId: discordUser.id,
         username: discordUser.username,
         avatar: discordUser.avatar,
         role: isOwner ? 'OWNER' : 'USER',
         coins: isOwner ? 999999 : 0,
-        purchasedFrames: [],
-        purchasedColors: [],
+        purchasedFrames: admin ? all.frames : [],
+        purchasedColors: admin ? all.colors : [],
+        purchasedTitles: admin ? all.titles : [],
+        activeFrame: null,
+        activeColor: null,
+        activeTitle: admin ? 'chosen' : null,
         usedPromos: [],
         createdAt: FieldValue.serverTimestamp()
       };
       await userRef.set(userData);
       sendWebhook(`🎉 Новый: **${discordUser.username}** (\`${discordUser.id}\`)`);
+    }
+
+    // Авто-выдача всего для OWNER/ADMIN
+    const all = getAdminItems();
+    if (isAdmin(userData.role)) {
+      const updates = {};
+      const mergedFrames = Array.from(new Set([...(userData.purchasedFrames || []), ...all.frames]));
+      const mergedColors = Array.from(new Set([...(userData.purchasedColors || []), ...all.colors]));
+      const mergedTitles = Array.from(new Set([...(userData.purchasedTitles || []), ...all.titles]));
+      if (mergedFrames.length !== (userData.purchasedFrames || []).length) updates.purchasedFrames = mergedFrames;
+      if (mergedColors.length !== (userData.purchasedColors || []).length) updates.purchasedColors = mergedColors;
+      if (mergedTitles.length !== (userData.purchasedTitles || []).length) updates.purchasedTitles = mergedTitles;
+      if (Object.keys(updates).length > 0) {
+        await userRef.update(updates);
+        userData = { ...userData, ...updates };
+      }
     }
 
     req.session.userId = discordUser.id;
@@ -166,6 +225,23 @@ app.get('/api/auth/me', async (req, res) => {
       req.session.user.role = data.role || 'USER';
       req.session.user.purchasedFrames = data.purchasedFrames || [];
       req.session.user.purchasedColors = data.purchasedColors || [];
+      req.session.user.purchasedTitles = data.purchasedTitles || [];
+      req.session.user.activeFrame = data.activeFrame || null;
+      req.session.user.activeColor = data.activeColor || null;
+      req.session.user.activeTitle = data.activeTitle || null;
+
+      // Авто-выдача админу
+      if (isAdmin(req.session.user.role)) {
+        const all = getAdminItems();
+        const updates = {};
+        if ((data.purchasedFrames || []).length !== all.frames.length) updates.purchasedFrames = all.frames;
+        if ((data.purchasedColors || []).length !== all.colors.length) updates.purchasedColors = all.colors;
+        if ((data.purchasedTitles || []).length !== all.titles.length) updates.purchasedTitles = all.titles;
+        if (Object.keys(updates).length > 0) {
+          await db.collection('users').doc(req.session.user.id).update(updates);
+          Object.assign(req.session.user, updates);
+        }
+      }
     }
   } catch (err) {}
   res.json({ loggedIn: true, user: req.session.user });
@@ -216,7 +292,7 @@ app.post('/api/promo/activate', async (req, res) => {
 ============================================================ */
 app.get('/api/stats', async (req, res) => {
   try {
-    if (!db) return res.json({ users: 0, online: 20 });
+    if (!db) return res.json({ users: 0, posts: 0, online: 20 });
     const usersSnap = await db.collection('users').count().get();
     const postsSnap = await db.collection('posts').count().get();
     res.json({
@@ -243,14 +319,113 @@ app.get('/api/user/:id', async (req, res) => {
       avatar: data.avatar,
       role: data.role,
       coins: data.coins,
-      purchasedFrames: data.purchasedFrames || [],
-      purchasedColors: data.purchasedColors || []
+      activeFrame: data.activeFrame || null,
+      activeColor: data.activeColor || null,
+      activeTitle: data.activeTitle || null
     });
   } catch (err) { res.status(500).json({ error: 'Ошибка' }); }
 });
 
 /* ============================================================
-   @MENTIONS — парсинг и создание уведомлений
+   МАГАЗИН
+============================================================ */
+app.get('/api/shop', (req, res) => {
+  res.json(SHOP_ITEMS);
+});
+
+app.post('/api/shop/purchase', async (req, res) => {
+  if (!req.session.user) return res.status(401).json({ error: 'Войди через Discord' });
+  if (!db) return res.status(500).json({ error: 'БД' });
+
+  const { type, itemId } = req.body;
+  if (!type || !itemId) return res.status(400).json({ error: 'Не указан товар' });
+  if (!['frames', 'colors', 'titles'].includes(type)) return res.status(400).json({ error: 'Неверный тип' });
+
+  const catalog = SHOP_ITEMS[type];
+  const item = catalog[itemId];
+  if (!item) return res.status(404).json({ error: 'Товар не найден' });
+
+  try {
+    const userRef = db.collection('users').doc(req.session.user.id);
+
+    const result = await db.runTransaction(async (t) => {
+      const userDoc = await t.get(userRef);
+      const userData = userDoc.data();
+
+      const fieldMap = { frames: 'purchasedFrames', colors: 'purchasedColors', titles: 'purchasedTitles' };
+      const ownedField = fieldMap[type];
+      const owned = userData[ownedField] || [];
+
+      // У админа — уже есть
+      if (isAdmin(userData.role)) throw new Error('ADMIN_ALREADY_HAS');
+      if (owned.includes(itemId)) throw new Error('ALREADY_OWNED');
+
+      const coins = userData.coins || 0;
+      if (coins < item.price) throw new Error('NOT_ENOUGH_COINS');
+
+      t.update(userRef, {
+        coins: FieldValue.increment(-item.price),
+        [ownedField]: FieldValue.arrayUnion(itemId)
+      });
+
+      return { price: item.price, newBalance: coins - item.price, name: item.name };
+    });
+
+    req.session.user.coins = result.newBalance;
+    sendWebhook(`🛒 **${req.session.user.username}** купил **${result.name}** за **${result.price}💰**`);
+
+    res.json({ success: true, newBalance: result.newBalance, name: result.name });
+  } catch (err) {
+    const map = {
+      'ADMIN_ALREADY_HAS': { code: 400, msg: 'У администратора уже есть всё' },
+      'ALREADY_OWNED': { code: 400, msg: 'Уже куплено' },
+      'NOT_ENOUGH_COINS': { code: 400, msg: 'Недостаточно монет' }
+    };
+    const e = map[err.message];
+    if (e) return res.status(e.code).json({ error: e.msg });
+    console.error('Purchase error:', err);
+    res.status(500).json({ error: 'Ошибка' });
+  }
+});
+
+app.post('/api/shop/equip', async (req, res) => {
+  if (!req.session.user) return res.status(401).json({ error: 'Войди через Discord' });
+  if (!db) return res.status(500).json({ error: 'БД' });
+
+  const { type, itemId } = req.body;
+  if (!['frames', 'colors', 'titles'].includes(type)) return res.status(400).json({ error: 'Неверный тип' });
+
+  try {
+    const userRef = db.collection('users').doc(req.session.user.id);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
+    const fieldMap = { frames: 'purchasedFrames', colors: 'purchasedColors', titles: 'purchasedTitles' };
+    const activeFieldMap = { frames: 'activeFrame', colors: 'activeColor', titles: 'activeTitle' };
+    const ownedField = fieldMap[type];
+    const activeField = activeFieldMap[type];
+
+    // null = снять
+    if (itemId === null) {
+      await userRef.update({ [activeField]: null });
+      req.session.user[activeField] = null;
+      return res.json({ success: true, active: null });
+    }
+
+    const owned = userData[ownedField] || [];
+    if (!owned.includes(itemId)) return res.status(403).json({ error: 'Не куплено' });
+
+    await userRef.update({ [activeField]: itemId });
+    req.session.user[activeField] = itemId;
+    res.json({ success: true, active: itemId });
+  } catch (err) {
+    console.error('Equip error:', err);
+    res.status(500).json({ error: 'Ошибка' });
+  }
+});
+
+/* ============================================================
+   @MENTIONS
 ============================================================ */
 async function processMentions(text, fromUser, postId, replyId = null) {
   if (!db) return [];
@@ -286,7 +461,7 @@ async function processMentions(text, fromUser, postId, replyId = null) {
 }
 
 /* ============================================================
-   ФОРУМ — список постов (с поиском и сортировкой)
+   ФОРУМ
 ============================================================ */
 app.get('/api/posts', async (req, res) => {
   if (!db) return res.json({ posts: [] });
@@ -304,6 +479,9 @@ app.get('/api/posts', async (req, res) => {
         authorUsername: d.authorUsername,
         authorAvatar: d.authorAvatar,
         authorRole: d.authorRole || 'USER',
+        authorActiveFrame: d.authorActiveFrame || null,
+        authorActiveColor: d.authorActiveColor || null,
+        authorActiveTitle: d.authorActiveTitle || null,
         category: d.category,
         title: d.title,
         content: d.content,
@@ -317,10 +495,7 @@ app.get('/api/posts', async (req, res) => {
       };
     });
 
-    // Фильтр категории
     if (category !== 'all') posts = posts.filter(p => p.category === category);
-
-    // Поиск
     if (search) {
       posts = posts.filter(p =>
         (p.title || '').toLowerCase().includes(search) ||
@@ -329,18 +504,11 @@ app.get('/api/posts', async (req, res) => {
       );
     }
 
-    // Сортировка
-    if (sort === 'new') {
-      posts.sort((a, b) => (b.createdAt?._seconds || 0) - (a.createdAt?._seconds || 0));
-    } else if (sort === 'top') {
-      posts.sort((a, b) => b.likes - a.likes);
-    } else if (sort === 'discussed') {
-      posts.sort((a, b) => b.replyCount - a.replyCount);
-    } else if (sort === 'views') {
-      posts.sort((a, b) => b.views - a.views);
-    }
+    if (sort === 'new') posts.sort((a, b) => (b.createdAt?._seconds || 0) - (a.createdAt?._seconds || 0));
+    else if (sort === 'top') posts.sort((a, b) => b.likes - a.likes);
+    else if (sort === 'discussed') posts.sort((a, b) => b.replyCount - a.replyCount);
+    else if (sort === 'views') posts.sort((a, b) => b.views - a.views);
 
-    // Закреплённые — всегда сверху
     posts.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
     res.json({ posts });
@@ -350,9 +518,6 @@ app.get('/api/posts', async (req, res) => {
   }
 });
 
-/* ============================================================
-   ФОРУМ — один пост + ответы (+views++)
-============================================================ */
 app.get('/api/posts/:id', async (req, res) => {
   if (!db) return res.status(500).json({ error: 'БД' });
   try {
@@ -361,7 +526,6 @@ app.get('/api/posts/:id', async (req, res) => {
     if (!postDoc.exists) return res.status(404).json({ error: 'Не найден' });
     const post = postDoc.data();
 
-    // ++ просмотр (не автору)
     if (!req.session.user || req.session.user.id !== post.authorId) {
       try { await postRef.update({ views: FieldValue.increment(1) }); } catch (e) {}
     }
@@ -375,6 +539,9 @@ app.get('/api/posts/:id', async (req, res) => {
         authorUsername: d.authorUsername,
         authorAvatar: d.authorAvatar,
         authorRole: d.authorRole || 'USER',
+        authorActiveFrame: d.authorActiveFrame || null,
+        authorActiveColor: d.authorActiveColor || null,
+        authorActiveTitle: d.authorActiveTitle || null,
         content: d.content,
         likes: (d.likes || []).length,
         likedByMe: req.session.user ? (d.likes || []).includes(req.session.user.id) : false,
@@ -390,6 +557,9 @@ app.get('/api/posts/:id', async (req, res) => {
         authorUsername: post.authorUsername,
         authorAvatar: post.authorAvatar,
         authorRole: post.authorRole || 'USER',
+        authorActiveFrame: post.authorActiveFrame || null,
+        authorActiveColor: post.authorActiveColor || null,
+        authorActiveTitle: post.authorActiveTitle || null,
         category: post.category,
         title: post.title,
         content: post.content,
@@ -408,9 +578,6 @@ app.get('/api/posts/:id', async (req, res) => {
   }
 });
 
-/* ============================================================
-   ФОРУМ — создать пост
-============================================================ */
 app.post('/api/posts', async (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: 'Войди' });
   if (!db) return res.status(500).json({ error: 'БД' });
@@ -428,11 +595,17 @@ app.post('/api/posts', async (req, res) => {
   }
 
   try {
+    const uDoc = await db.collection('users').doc(req.session.user.id).get();
+    const ud = uDoc.data() || {};
+
     const postRef = await db.collection('posts').add({
       authorId: req.session.user.id,
       authorUsername: req.session.user.username,
       authorAvatar: req.session.user.avatar,
       authorRole: req.session.user.role,
+      authorActiveFrame: ud.activeFrame || null,
+      authorActiveColor: ud.activeColor || null,
+      authorActiveTitle: ud.activeTitle || null,
       category,
       title,
       content,
@@ -443,9 +616,7 @@ app.post('/api/posts', async (req, res) => {
       createdAt: FieldValue.serverTimestamp()
     });
 
-    // @mentions
     await processMentions(content, req.session.user, postRef.id);
-
     sendWebhook(`📝 **${req.session.user.username}** создал пост «${title}» в /${category}`);
     res.json({ success: true, id: postRef.id });
   } catch (err) {
@@ -454,17 +625,12 @@ app.post('/api/posts', async (req, res) => {
   }
 });
 
-/* ============================================================
-   ФОРУМ — редактировать пост
-============================================================ */
 app.post('/api/posts/:id/edit', async (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: 'Войди' });
   if (!db) return res.status(500).json({ error: 'БД' });
 
   const { title, content } = req.body;
   if (!title || !content) return res.status(400).json({ error: 'Заполни всё' });
-  if (title.length > 150) return res.status(400).json({ error: 'Заголовок длинный' });
-  if (content.length > 5000) return res.status(400).json({ error: 'Текст длинный' });
 
   try {
     const postRef = db.collection('posts').doc(req.params.id);
@@ -475,21 +641,11 @@ app.post('/api/posts/:id/edit', async (req, res) => {
     const isMod = canModerate(req.session.user.role);
     if (!isAuthor && !isMod) return res.status(403).json({ error: 'Нет прав' });
 
-    await postRef.update({
-      title,
-      content,
-      editedAt: FieldValue.serverTimestamp()
-    });
+    await postRef.update({ title, content, editedAt: FieldValue.serverTimestamp() });
     res.json({ success: true });
-  } catch (err) {
-    console.error('Post edit error:', err);
-    res.status(500).json({ error: 'Ошибка' });
-  }
+  } catch (err) { res.status(500).json({ error: 'Ошибка' }); }
 });
 
-/* ============================================================
-   ФОРУМ — закрепить / открепить
-============================================================ */
 app.post('/api/posts/:id/pin', async (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: 'Войди' });
   if (!isAdmin(req.session.user.role)) return res.status(403).json({ error: 'Только админ/владелец' });
@@ -506,9 +662,6 @@ app.post('/api/posts/:id/pin', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Ошибка' }); }
 });
 
-/* ============================================================
-   ФОРУМ — ответить
-============================================================ */
 app.post('/api/posts/:id/replies', async (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: 'Войди' });
   if (!db) return res.status(500).json({ error: 'БД' });
@@ -521,22 +674,25 @@ app.post('/api/posts/:id/replies', async (req, res) => {
     const postDoc = await db.collection('posts').doc(req.params.id).get();
     if (!postDoc.exists) return res.status(404).json({ error: 'Пост не найден' });
 
+    const uDoc = await db.collection('users').doc(req.session.user.id).get();
+    const ud = uDoc.data() || {};
+
     const replyRef = await db.collection('replies').add({
       postId: req.params.id,
       authorId: req.session.user.id,
       authorUsername: req.session.user.username,
       authorAvatar: req.session.user.avatar,
       authorRole: req.session.user.role,
+      authorActiveFrame: ud.activeFrame || null,
+      authorActiveColor: ud.activeColor || null,
+      authorActiveTitle: ud.activeTitle || null,
       content,
       likes: [],
       createdAt: FieldValue.serverTimestamp()
     });
 
-    await db.collection('posts').doc(req.params.id).update({
-      replyCount: FieldValue.increment(1)
-    });
+    await db.collection('posts').doc(req.params.id).update({ replyCount: FieldValue.increment(1) });
 
-    // Уведомление автору поста
     const postData = postDoc.data();
     if (postData.authorId !== req.session.user.id) {
       await db.collection('notifications').add({
@@ -553,9 +709,7 @@ app.post('/api/posts/:id/replies', async (req, res) => {
       });
     }
 
-    // @mentions
     await processMentions(content, req.session.user, req.params.id, replyRef.id);
-
     res.json({ success: true, id: replyRef.id });
   } catch (err) {
     console.error('Reply error:', err);
@@ -563,16 +717,12 @@ app.post('/api/posts/:id/replies', async (req, res) => {
   }
 });
 
-/* ============================================================
-   ФОРУМ — редактировать ответ
-============================================================ */
 app.post('/api/replies/:id/edit', async (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: 'Войди' });
   if (!db) return res.status(500).json({ error: 'БД' });
 
   const { content } = req.body;
   if (!content) return res.status(400).json({ error: 'Пусто' });
-  if (content.length > 2000) return res.status(400).json({ error: 'Длинно' });
 
   try {
     const replyRef = db.collection('replies').doc(req.params.id);
@@ -588,9 +738,6 @@ app.post('/api/replies/:id/edit', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Ошибка' }); }
 });
 
-/* ============================================================
-   ЛАЙКИ
-============================================================ */
 app.post('/api/posts/:id/like', async (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: 'Войди' });
   if (!db) return res.status(500).json({ error: 'БД' });
@@ -608,7 +755,6 @@ app.post('/api/posts/:id/like', async (req, res) => {
       res.json({ success: true, liked: false, count: likes.length - 1 });
     } else {
       await postRef.update({ likes: FieldValue.arrayUnion(userId) });
-      // Уведомление автору
       if (postData.authorId !== userId) {
         await db.collection('notifications').add({
           userId: postData.authorId,
@@ -663,9 +809,6 @@ app.post('/api/replies/:id/like', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Ошибка' }); }
 });
 
-/* ============================================================
-   УДАЛЕНИЕ
-============================================================ */
 app.delete('/api/posts/:id', async (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: 'Войди' });
   if (!db) return res.status(500).json({ error: 'БД' });
@@ -707,40 +850,23 @@ app.delete('/api/replies/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Ошибка' }); }
 });
 
-/* ============================================================
-   УВЕДОМЛЕНИЯ
-============================================================ */
+/* УВЕДОМЛЕНИЯ */
 app.get('/api/notifications', async (req, res) => {
   if (!req.session.user) return res.json({ notifications: [], unread: 0 });
   if (!db) return res.json({ notifications: [], unread: 0 });
   try {
-    const snap = await db.collection('notifications')
-      .where('userId', '==', req.session.user.id)
-      .limit(50)
-      .get();
-
+    const snap = await db.collection('notifications').where('userId', '==', req.session.user.id).limit(50).get();
     let notifications = snap.docs.map(doc => {
       const d = doc.data();
       return {
-        id: doc.id,
-        type: d.type,
-        fromUserId: d.fromUserId,
-        fromUsername: d.fromUsername,
-        fromAvatar: d.fromAvatar,
-        postId: d.postId,
-        replyId: d.replyId || null,
-        text: d.text,
-        read: d.read || false,
-        createdAt: d.createdAt
+        id: doc.id, type: d.type, fromUserId: d.fromUserId, fromUsername: d.fromUsername,
+        fromAvatar: d.fromAvatar, postId: d.postId, replyId: d.replyId || null,
+        text: d.text, read: d.read || false, createdAt: d.createdAt
       };
     }).sort((a, b) => (b.createdAt?._seconds || 0) - (a.createdAt?._seconds || 0));
-
     const unread = notifications.filter(n => !n.read).length;
     res.json({ notifications, unread });
-  } catch (err) {
-    console.error('Notifications error:', err);
-    res.json({ notifications: [], unread: 0 });
-  }
+  } catch (err) { res.json({ notifications: [], unread: 0 }); }
 });
 
 app.post('/api/notifications/read', async (req, res) => {
@@ -778,7 +904,7 @@ app.use((req, res) => {
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log('═══════════════════════════════════════');
-    console.log(`🚀 ExecChecker запущен на порту ${PORT}`);
+    console.log(`🚀 ExecChecker на порту ${PORT}`);
     console.log('═══════════════════════════════════════');
   });
 }
