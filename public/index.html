@@ -460,7 +460,7 @@ html[data-theme="lab"] .pv-content code,html[data-theme="lab"] .pv-reply-body co
 .p-stat .p-num{font-family:var(--font-display);font-size:1.3rem;font-weight:900;color:var(--accent-soft);word-break:break-all}
 .p-stat .p-lbl{margin-top:4px;font-size:.7rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase}
 .profile-role-block{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
-.profile-role-sub{font-size:.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--accent-soft);font-family:var(--font-display);font-weight:700;padding-left:4px}
+.profile-role-sub-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-family:var(--font-display);font-size:.62rem;letter-spacing:2px;font-weight:900;text-transform:uppercase;background:linear-gradient(135deg,#ffd700,#ffb800);color:#000;box-shadow:0 0 20px rgba(255,200,0,.75);margin-top:4px}
 .authors{perspective:1000px}
 .author-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
 .author{padding:30px 26px;border-radius:20px;background:rgba(20,12,50,.5);border:1px solid rgba(var(--accent-rgb),.3);text-align:center;transition:transform .15s ease,box-shadow .35s,border-color .35s;backdrop-filter:blur(12px);transform-style:preserve-3d;position:relative}
@@ -973,7 +973,7 @@ html[data-theme="lab"] .modal-content{background:linear-gradient(160deg,#fff,#f0
       <div class="profile-role-block">
         <h3 id="pUsername" style="margin:0 !important;font-size:1.1rem !important;">Username</h3>
         <span class="profile-role" id="pRole">USER</span>
-        <span class="profile-role-sub" id="pRoleSub" style="display:none;">Владелец</span>
+        <span class="profile-role-sub-badge" id="pRoleSub" style="display:none;">Владелец программы/сайта</span>
       </div>
     </div>
     <div class="profile-stats">
@@ -1675,7 +1675,7 @@ document.getElementById('promoSubmit').addEventListener('click', async () => {
     if (r.ok && data.success) {
       status.style.color = '#7dffab';
       status.textContent = `✅ +${data.coins}! ${data.newBalance}`;
-      showToast(`+${data.coins} 🪙`, '🎁');
+      showToast(`+${data.coins} 💰`, '🎁');
       input.value = '';
       if (typeof checkAuth === 'function') checkAuth();
     } else {
@@ -1915,7 +1915,7 @@ function renderAuthBlock() {
       <div class="auth-user" onclick="openProfile()">
         <img src="${avatarUrl}" alt="">
         <span class="u-name">${currentUser.username}</span>
-        <span class="u-coins">🪙 ${currentUser.coins || 0}</span>
+        <span class="u-coins">💰 ${currentUser.coins || 0}</span>
       </div>
     `;
   } else {
@@ -1927,7 +1927,7 @@ function loginWithDiscord() { window.location.href = '/api/auth/login'; }
 function logout() { window.location.href = '/api/auth/logout'; }
 
 function getDisplayRole(role) {
-  if (role === 'OWNER') return { main: 'ADMIN', sub: 'Владелец' };
+if (role === 'OWNER') return { main: 'ADMIN', sub: 'Владелец программы/сайта' };
   if (role === 'ADMIN') return { main: 'ADMIN', sub: null };
   if (role === 'SENIOR_MODERATOR') return { main: 'SENIOR_MODERATOR', sub: null };
   if (role === 'MODERATOR') return { main: 'MODERATOR', sub: null };
@@ -2459,7 +2459,7 @@ document.getElementById('notifBtn').addEventListener('click', async () => {
         `;
       }).join('');
     }
-    await fetch('/api/notifications/read', { method: 'POST' });
+    try { await fetch('/api/notifications/read', { method: 'POST' }); } catch (e) {}
     checkNotifications();
   } catch (err) {
     list.innerHTML = '<div class="notif-empty">Ошибка загрузки</div>';
