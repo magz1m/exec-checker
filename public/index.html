@@ -2756,7 +2756,8 @@ async function equipItem(type, itemId) {
     }
   } catch (err) { showToast('Ошибка', '⚠️'); }
 }
-  if (!currentUser) { showToast(t('toast_need_login'), '🔒'); return; }
+async function purchaseItem(type, itemId) {
+if (!currentUser) { showToast(t('toast_need_login'), '🔒'); return; }
   try {
     const r = await fetch('/api/shop/purchase', {
       method: 'POST',
