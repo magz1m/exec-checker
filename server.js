@@ -5,9 +5,9 @@ const fetch = require('node-fetch');
 const path = require('path');
 
 /* ============================================================
-   FIREBASE INIT — с диагностикой
+   FIREBASE INIT — защита от повторной инициализации
 ============================================================ */
-const { initializeApp, cert } = require('firebase-admin/app');
+const { initializeApp, cert, getApps } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 const serviceAccount = {
@@ -16,18 +16,15 @@ const serviceAccount = {
   privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
 };
 
-console.log('🔍 FIREBASE DIAGNOSTIC:');
-console.log('  projectId:', serviceAccount.projectId ? '✅ есть' : '❌ НЕТ');
-console.log('  clientEmail:', serviceAccount.clientEmail ? '✅ есть' : '❌ НЕТ');
-console.log('  privateKey starts:', serviceAccount.privateKey.substring(0, 30));
-console.log('  privateKey ends:', serviceAccount.privateKey.slice(-30));
-console.log('  privateKey length:', serviceAccount.privateKey.length);
-
 let db = null;
 try {
-  initializeApp({ credential: cert(serviceAccount) });
+  if (getApps().length === 0) {
+    initializeApp({ credential: cert(serviceAccount) });
+    console.log('✅ Firebase initialized');
+  } else {
+    console.log('✅ Firebase already initialized — reusing');
+  }
   db = getFirestore();
-  console.log('✅ Firebase initialized');
 } catch (e) {
   console.error('❌ FIREBASE INIT ERROR:', e.message);
 }
@@ -36,23 +33,32 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const OWNER_ID = process.env.OWNER_DISCORD_ID;
 
+/* ============================================================
+   MIDDLEWARE
+============================================================ */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.set('trust proxy', 1);
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'fallback-secret',
+  secret: process.env.SESSION_SECRET || 'fallback-secret-change-me',
   resave: false,
   saveUninitialized: false,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7,
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production'
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   }
 }));
 
+/* ============================================================
+   СТАТИКА
+============================================================ */
 app.use(express.static(path.join(__dirname, 'public')));
 
 /* ============================================================
-   ДИАГНОСТИЧЕСКИЙ ЭНДПОИНТ
+   ДИАГНОСТИКА
 ============================================================ */
 app.get('/api/debug', (req, res) => {
   res.json({
@@ -60,13 +66,13 @@ app.get('/api/debug', (req, res) => {
     projectId: serviceAccount.projectId || 'missing',
     clientEmail: serviceAccount.clientEmail ? serviceAccount.clientEmail.substring(0, 30) + '...' : 'missing',
     privateKeyLength: serviceAccount.privateKey.length,
-    privateKeyStart: serviceAccount.privateKey.substring(0, 30),
+    nodeVersion: process.version,
     envKeys: Object.keys(process.env).filter(k => k.includes('FIREBASE') || k.includes('DISCORD') || k.includes('SESSION'))
   });
 });
 
 /* ============================================================
-   AUTH
+   AUTH — Discord OAuth
 ============================================================ */
 app.get('/api/auth/login', (req, res) => {
   const params = new URLSearchParams({
@@ -95,7 +101,10 @@ app.get('/api/auth/callback', async (req, res) => {
       })
     });
     const tokenData = await tokenRes.json();
-    if (!tokenData.access_token) throw new Error('No access token');
+    if (!tokenData.access_token) {
+      console.error('Token exchange failed:', tokenData);
+      throw new Error('No access token');
+    }
 
     const userRes = await fetch('https://discord.com/api/users/@me', {
       headers: { Authorization: `Bearer ${tokenData.access_token}` }
@@ -108,13 +117,21 @@ app.get('/api/auth/callback', async (req, res) => {
     let userData;
     if (userDoc.exists) {
       userData = userDoc.data();
-      await userRef.update({ username: discordUser.username, avatar: discordUser.avatar });
+      await userRef.update({
+        username: discordUser.username,
+        avatar: discordUser.avatar
+      });
     } else {
       const isOwner = discordUser.id === OWNER_ID;
       userData = {
-        discordId: discordUser.id, username: discordUser.username, avatar: discordUser.avatar,
-        role: isOwner ? 'OWNER' : 'USER', coins: isOwner ? 999999 : 0,
-        purchasedFrames: [], purchasedColors: [], usedPromos: [],
+        discordId: discordUser.id,
+        username: discordUser.username,
+        avatar: discordUser.avatar,
+        role: isOwner ? 'OWNER' : 'USER',
+        coins: isOwner ? 999999 : 0,
+        purchasedFrames: [],
+        purchasedColors: [],
+        usedPromos: [],
         createdAt: FieldValue.serverTimestamp()
       };
       await userRef.set(userData);
@@ -123,9 +140,13 @@ app.get('/api/auth/callback', async (req, res) => {
 
     req.session.userId = discordUser.id;
     req.session.user = {
-      id: discordUser.id, username: discordUser.username, avatar: discordUser.avatar,
-      role: userData.role, coins: userData.coins || 0
+      id: discordUser.id,
+      username: discordUser.username,
+      avatar: discordUser.avatar,
+      role: userData.role,
+      coins: userData.coins || 0
     };
+
     res.redirect('/');
   } catch (err) {
     console.error('OAuth error:', err);
@@ -145,13 +166,23 @@ app.get('/api/auth/me', async (req, res) => {
       const data = userDoc.data();
       req.session.user.coins = data.coins || 0;
       req.session.user.role = data.role || 'USER';
+      req.session.user.purchasedFrames = data.purchasedFrames || [];
+      req.session.user.purchasedColors = data.purchasedColors || [];
     }
-  } catch (err) {}
+  } catch (err) {
+    console.error('Me error:', err);
+  }
   res.json({ loggedIn: true, user: req.session.user });
 });
 
+/* ============================================================
+   ПРОМОКОДЫ
+============================================================ */
 app.post('/api/promo/activate', async (req, res) => {
-  if (!req.session.user) return res.status(401).json({ error: 'Сначала войди через Discord' });
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Сначала войди через Discord' });
+  }
+
   const code = (req.body.code || '').trim().toUpperCase();
   if (!code) return res.status(400).json({ error: 'Пустой код' });
 
@@ -162,67 +193,125 @@ app.post('/api/promo/activate', async (req, res) => {
     const result = await db.runTransaction(async (t) => {
       const promoDoc = await t.get(promoRef);
       const userDoc = await t.get(userRef);
+
       if (!promoDoc.exists) throw new Error('INVALID');
+
       const userData = userDoc.data();
-      if (userData.usedPromos && userData.usedPromos.includes(code)) throw new Error('ALREADY_USED');
+      if (userData.usedPromos && userData.usedPromos.includes(code)) {
+        throw new Error('ALREADY_USED');
+      }
+
       const promo = promoDoc.data();
       if (promo.used) throw new Error('USED');
-      t.update(promoRef, { used: true, usedBy: req.session.user.id, usedAt: FieldValue.serverTimestamp() });
-      t.update(userRef, { coins: FieldValue.increment(promo.coins), usedPromos: FieldValue.arrayUnion(code) });
-      return { coins: promo.coins, newBalance: (userData.coins || 0) + promo.coins };
+
+      t.update(promoRef, {
+        used: true,
+        usedBy: req.session.user.id,
+        usedAt: FieldValue.serverTimestamp()
+      });
+      t.update(userRef, {
+        coins: FieldValue.increment(promo.coins),
+        usedPromos: FieldValue.arrayUnion(code)
+      });
+
+      return {
+        coins: promo.coins,
+        newBalance: (userData.coins || 0) + promo.coins
+      };
     });
 
     req.session.user.coins = result.newBalance;
-    sendWebhook(`🎁 **${req.session.user.username}** активировал промокод \`${code}\` +**${result.coins} монет**!`);
+    sendWebhook(`🎁 **${req.session.user.username}** активировал промокод \`${code}\` и получил **${result.coins} монет**!`);
+
     res.json({ success: true, coins: result.coins, newBalance: result.newBalance });
   } catch (err) {
-    const map = { 'INVALID': { code: 404, msg: 'Неверный код' }, 'ALREADY_USED': { code: 400, msg: 'Ты уже использовал этот код' }, 'USED': { code: 400, msg: 'Код уже использован' } };
+    const map = {
+      'INVALID': { code: 404, msg: 'Неверный код' },
+      'ALREADY_USED': { code: 400, msg: 'Ты уже использовал этот код' },
+      'USED': { code: 400, msg: 'Код уже использован' }
+    };
     const e = map[err.message];
     if (e) return res.status(e.code).json({ error: e.msg });
-    res.status(500).json({ error: 'Ошибка сервера: ' + err.message });
+    console.error('Promo error:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
+/* ============================================================
+   СТАТИСТИКА
+============================================================ */
 app.get('/api/stats', async (req, res) => {
   try {
     if (!db) return res.json({ users: 0, online: 20 });
     const usersSnap = await db.collection('users').count().get();
-    res.json({ users: usersSnap.data().count, online: Math.floor(Math.random() * 30) + 15 });
+    res.json({
+      users: usersSnap.data().count,
+      online: Math.floor(Math.random() * 30) + 15
+    });
   } catch (err) {
+    console.error('Stats error:', err);
     res.json({ users: 0, online: 20 });
   }
 });
 
+/* ============================================================
+   ПРОФИЛЬ
+============================================================ */
 app.get('/api/user/:id', async (req, res) => {
   try {
     const userDoc = await db.collection('users').doc(req.params.id).get();
-    if (!userDoc.exists) return res.status(404).json({ error: 'Не найден' });
+    if (!userDoc.exists) return res.status(404).json({ error: 'Пользователь не найден' });
+
     const data = userDoc.data();
-    res.json({ discordId: data.discordId, username: data.username, avatar: data.avatar, role: data.role, coins: data.coins, purchasedFrames: data.purchasedFrames || [], purchasedColors: data.purchasedColors || [] });
+    res.json({
+      discordId: data.discordId,
+      username: data.username,
+      avatar: data.avatar,
+      role: data.role,
+      coins: data.coins,
+      purchasedFrames: data.purchasedFrames || [],
+      purchasedColors: data.purchasedColors || [],
+      createdAt: data.createdAt
+    });
   } catch (err) {
-    res.status(500).json({ error: 'Ошибка' });
+    console.error('User error:', err);
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
+/* ============================================================
+   ХЕЛПЕР: WEBHOOK
+============================================================ */
 async function sendWebhook(content) {
   if (!process.env.DISCORD_WEBHOOK_URL) return;
   try {
     await fetch(process.env.DISCORD_WEBHOOK_URL, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content })
     });
-  } catch (err) {}
+  } catch (err) {
+    console.error('Webhook error:', err);
+  }
 }
 
-app.get('*', (req, res) => {
+/* ============================================================
+   FALLBACK — отдаём index.html (работает в Express 5)
+============================================================ */
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+/* ============================================================
+   СТАРТ (только локально)
+============================================================ */
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log('═══════════════════════════════════════');
     console.log(`🚀 ExecChecker запущен!`);
     console.log(`🌐 Открой: http://localhost:${PORT}`);
+    console.log(`👑 Владелец: ${OWNER_ID}`);
+    console.log(`🔧 Режим: ${process.env.NODE_ENV || 'development'}`);
     console.log('═══════════════════════════════════════');
   });
 }
