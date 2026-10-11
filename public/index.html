@@ -1911,7 +1911,7 @@ function logout() { window.location.href = '/api/auth/logout'; }
 
 /* РОЛЬ: показываем для OWNER: "АДМИНИСТРАТОР" + подпись "Владелец" */
 function getDisplayRole(role) {
-  if (role === 'OWNER') return { main: 'ADMIN', sub: 'Владелец', subKey: 'role_owner_label' };
+  if (role === 'OWNER') return { main: 'ADMIN', sub: 'Владелец сайта', subKey: 'role_owner_label' };
   if (role === 'ADMIN') return { main: 'ADMIN', sub: null };
   if (role === 'SENIOR_MODERATOR') return { main: 'SENIOR_MODERATOR', sub: null };
   if (role === 'MODERATOR') return { main: 'MODERATOR', sub: null };
