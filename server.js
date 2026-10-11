@@ -220,7 +220,10 @@ app.get('*', (req, res) => {
 
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log('🚀 ExecChecker запущен на порту ' + PORT);
+    console.log('═══════════════════════════════════════');
+    console.log(`🚀 ExecChecker запущен!`);
+    console.log(`🌐 Открой: http://localhost:${PORT}`);
+    console.log('═══════════════════════════════════════');
   });
 }
 
