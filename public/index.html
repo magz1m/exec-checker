@@ -1362,7 +1362,6 @@ function applyLang(lang) {
     b.classList.toggle('active', b.dataset.lang === lang);
   });
   localStorage.setItem('lang', lang);
-  if (typeof updateNewPostForm === 'function') updateNewPostForm();
 }
 document.querySelectorAll('.lang-switch button').forEach(b => {
   b.addEventListener('click', () => applyLang(b.dataset.lang));
