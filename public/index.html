@@ -562,7 +562,7 @@ html[data-theme="lab"] .modal-content{background:linear-gradient(160deg,#fff,#f0
 </div>
 
 <div class="stats-row reveal">
-  <div class="stat"><div class="s-num" id="statDownloads" data-count="0">0</div><div class="s-label" data-i18n="stat_downloads">Пользователей</div>
+  <div class="stat"><div class="s-num" id="statDownloads" data-count="0">0</div><div class="s-label" data-i18n="stat_downloads">Скачиваний</div></div>
   <div class="stat"><div class="s-num" id="statOnline" data-count="0">0</div><div class="s-label" data-i18n="stat_online">Онлайн</div></div>
   <div class="stat"><div class="s-num">v4.0</div><div class="s-label" data-i18n="stat_version">Версия</div></div>
 </div>
@@ -624,7 +624,7 @@ html[data-theme="lab"] .modal-content{background:linear-gradient(160deg,#fff,#f0
       <code id="hashValue">eeaa473e3a0e1047bb39d1304bf4a019439db9dd21310656fa71981ee9b2f63b</code>
       <button class="copy" id="copyHash" data-i18n="hash_copy">Копировать</button>
     </div>
-    <div class="hash-note" data-i18n="hash_note">Сверь хеш после скачивания: открой PowerShell и введи<br><code>Get-FileHash .\ExecChecker.bat -Algorithm SHA256</code></div>
+    <div class="hash-note" data-i18n="hash_note">Сверь хеш после скачивания: открой PowerShell и введи<br><code>Get-FileHash .\\ExecChecker.bat -Algorithm SHA256</code></div>
     <div class="trust-row">
       <a class="trust-badge safe" href="https://www.virustotal.com/gui/file/eeaa473e3a0e1047bb39d1304bf4a019439db9dd21310656fa71981ee9b2f63b?nocache=1" target="_blank">🛡 <span data-i18n="vt_check">Проверено на VirusTotal</span></a>
       <span class="trust-badge safe">✅ <span data-i18n="safe_badge">Безопасно</span></span>
@@ -1207,7 +1207,7 @@ const i18n = {
     desc_title:'Описание',desc_text:'ExecChecker — утилита для проверки на наличие executor в Roblox. Быстро определяет, работает ли на системе тот или иной инжектор.',
     tag_check:'🛡 Проверка',tag_fast:'⚡ Быстро',
     btn_download:'Скачать',btn_usage:'Как использовать',btn_info:'О программе',dl_label:'Загрузка файла',
-    stat_downloads:'Пользователей',',stat_online:'Онлайн',stat_version:'Версия',
+    stat_downloads:'Скачиваний',stat_online:'Онлайн',stat_version:'Версия',
     steps_title:'✦ Как это работает ✦',step1_t:'Скачай',step1_d:'Нажми кнопку выше — файл .bat скачается за секунду',step2_t:'Запусти',step2_d:'Открой от имени администратора для полного доступа',step3_t:'Получи результат',step3_d:'Программа покажет, есть ли executor в системе',
     features_title:'✦ Возможности ✦',f1_t:'Скорость',f1_d:'Проверка занимает меньше секунды',f2_t:'Безопасность',f2_d:'Не вносит изменений в систему',f3_t:'Лёгкость',f3_d:'Всего один .bat файл',f4_t:'Бесплатно',f4_d:'Открытый доступ для всех',
     solar_title:'✦ Функции как планеты ✦',gallery_title:'✦ Скриншоты ✦',shot1:'Главное меню',shot2:'Процесс проверки',shot3:'Результат',
