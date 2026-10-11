@@ -389,6 +389,8 @@ app.post('/api/shop/purchase', async (req, res) => {
 });
 
 app.post('/api/shop/equip', async (req, res) => {
+    // Нормализация: строка 'null' → реальный null
+  const itemIdNorm = (itemId === 'null' || itemId === undefined) ? null : itemId;
   if (!req.session.user) return res.status(401).json({ error: 'Войди через Discord' });
   if (!db) return res.status(500).json({ error: 'БД' });
 
@@ -406,18 +408,18 @@ app.post('/api/shop/equip', async (req, res) => {
     const activeField = activeFieldMap[type];
 
     // null = снять
-    if (itemId === null) {
+    if (itemIdNorm === null) {
       await userRef.update({ [activeField]: null });
       req.session.user[activeField] = null;
       return res.json({ success: true, active: null });
     }
 
     const owned = userData[ownedField] || [];
-    if (!owned.includes(itemId)) return res.status(403).json({ error: 'Не куплено' });
+    if (!owned.includes(itemIdNorm)) return res.status(403).json({ error: 'Не куплено' });
 
-    await userRef.update({ [activeField]: itemId });
-    req.session.user[activeField] = itemId;
-    res.json({ success: true, active: itemId });
+    await userRef.update({ [activeField]: itemIdNorm });
+    req.session.user[activeField] = itemIdNorm;
+    res.json({ success: true, active: itemIdNorm });
   } catch (err) {
     console.error('Equip error:', err);
     res.status(500).json({ error: 'Ошибка' });

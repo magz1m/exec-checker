@@ -2706,6 +2706,63 @@ async function purchaseItem(type, itemId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, itemId })
     });
+    if (r.status === 401) {
+      showToast('Сессия истекла — войди заново', '🔒');
+      currentUser = null;
+      renderAuthBlock();
+      updateShopBalance();
+      renderShop();
+      return;
+    }
+    const data = await r.json();
+    if (r.ok && data.success) {
+      showToast(`✅ Куплено: ${data.name} (−${data.price}💰)`, '🛒');
+      currentUser.coins = data.newBalance;
+      await checkAuth();
+      updateShopBalance();
+      renderShop();
+    } else {
+      showToast(data.error || 'Ошибка', '⚠️');
+    }
+  } catch (err) { showToast('Ошибка', '⚠️'); }
+}
+
+async function equipItem(type, itemId) {
+  if (!currentUser) { showToast(t('toast_need_login'), '🔒'); return; }
+  try {
+    const r = await fetch('/api/shop/equip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, itemId })
+    });
+    if (r.status === 401) {
+      showToast('Сессия истекла — войди заново', '🔒');
+      currentUser = null;
+      renderAuthBlock();
+      updateShopBalance();
+      renderShop();
+      return;
+    }
+    const data = await r.json();
+    if (r.ok && data.success) {
+      if (itemId === null) showToast('✕ Снято', '');
+      else showToast('⭐ Применено', '✅');
+      await checkAuth();
+      renderShop();
+      loadPosts();
+      if (typeof renderMyCollection === 'function') renderMyCollection();
+    } else {
+      showToast(data.error || 'Ошибка', '⚠️');
+    }
+  } catch (err) { showToast('Ошибка', '⚠️'); }
+}
+  if (!currentUser) { showToast(t('toast_need_login'), '🔒'); return; }
+  try {
+    const r = await fetch('/api/shop/purchase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, itemId })
+    });
     const data = await r.json();
     if (r.ok && data.success) {
       showToast(`✅ Куплено: ${data.name} (−${data.price}💰)`, '🛒');
@@ -2766,7 +2823,8 @@ function renderMyCollection() {
       const item = shopCatalog[catalogKey][id];
       if (!item) return '';
       const isActive = active === id;
-      return `<div class="collection-chip ${isActive ? 'active' : ''}" onclick="equipItem('${type}', '${isActive ? 'null' : id}')">${item.name}</div>`;
+      const clickArg = isActive ? 'null' : `'${id}'`;
+return `<div class="collection-chip ${isActive ? 'active' : ''}" onclick="equipItem('${type}', ${clickArg})">${item.name}</div>`;
     }).join('');
   }
 
