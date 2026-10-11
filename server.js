@@ -389,40 +389,50 @@ app.post('/api/shop/purchase', async (req, res) => {
 });
 
 app.post('/api/shop/equip', async (req, res) => {
-    // Нормализация: строка 'null' → реальный null
-  const itemIdNorm = (itemId === 'null' || itemId === undefined) ? null : itemId;
   if (!req.session.user) return res.status(401).json({ error: 'Войди через Discord' });
-  if (!db) return res.status(500).json({ error: 'БД' });
+  if (!db) return res.status(500).json({ error: 'БД недоступна' });
 
   const { type, itemId } = req.body;
-  if (!['frames', 'colors', 'titles'].includes(type)) return res.status(400).json({ error: 'Неверный тип' });
+  if (!['frames', 'colors', 'titles'].includes(type)) {
+    return res.status(400).json({ error: 'Неверный тип' });
+  }
+
+  // Нормализация: строка 'null' или undefined → настоящий null
+  const normalizedId = (itemId === null || itemId === 'null' || itemId === undefined || itemId === '') ? null : String(itemId);
 
   try {
     const userRef = db.collection('users').doc(req.session.user.id);
     const userDoc = await userRef.get();
+    if (!userDoc.exists) return res.status(404).json({ error: 'Профиль не найден' });
     const userData = userDoc.data();
 
-    const fieldMap = { frames: 'purchasedFrames', colors: 'purchasedColors', titles: 'purchasedTitles' };
+    const ownedFieldMap = { frames: 'purchasedFrames', colors: 'purchasedColors', titles: 'purchasedTitles' };
     const activeFieldMap = { frames: 'activeFrame', colors: 'activeColor', titles: 'activeTitle' };
-    const ownedField = fieldMap[type];
+    const ownedField = ownedFieldMap[type];
     const activeField = activeFieldMap[type];
 
-    // null = снять
-    if (itemIdNorm === null) {
+    // Снять
+    if (normalizedId === null) {
       await userRef.update({ [activeField]: null });
-      req.session.user[activeField] = null;
+      if (req.session.user) req.session.user[activeField] = null;
       return res.json({ success: true, active: null });
     }
 
+    // Проверка владения
     const owned = userData[ownedField] || [];
-    if (!owned.includes(itemIdNorm)) return res.status(403).json({ error: 'Не куплено' });
+    const isAdminUser = ['OWNER', 'ADMIN'].includes(userData.role);
 
-    await userRef.update({ [activeField]: itemIdNorm });
-    req.session.user[activeField] = itemIdNorm;
-    res.json({ success: true, active: itemIdNorm });
+    if (!isAdminUser && !owned.includes(normalizedId)) {
+      return res.status(403).json({ error: 'Товар не куплен' });
+    }
+
+    // Применяем
+    await userRef.update({ [activeField]: normalizedId });
+    if (req.session.user) req.session.user[activeField] = normalizedId;
+    res.json({ success: true, active: normalizedId });
   } catch (err) {
     console.error('Equip error:', err);
-    res.status(500).json({ error: 'Ошибка' });
+    res.status(500).json({ error: 'Ошибка сервера: ' + err.message });
   }
 });
 
