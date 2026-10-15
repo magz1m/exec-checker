@@ -415,11 +415,6 @@ textarea.pf-input{resize:vertical;line-height:1.5}
 .pf-row .close{margin-top:0;flex:1}
 .pf-primary{background:linear-gradient(135deg,var(--accent-3),var(--accent-1)) !important;border-color:rgba(var(--accent-rgb),.7) !important}
 .badge-role{display:inline-block;padding:2px 8px;border-radius:12px;font-family:var(--font-display);font-size:.58rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-left:6px}
-.badge-role.OWNER{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000}
-.badge-role.ADMIN{background:linear-gradient(135deg,#ff4a4a,#d82b2b);color:#fff}
-.badge-role.SENIOR_MODERATOR{background:linear-gradient(135deg,#ff9e6b,#d82b4a);color:#fff}
-.badge-role.MODERATOR{background:linear-gradient(135deg,#4a9bff,#1a4bd8);color:#fff}
-.badge-role.USER{display:none}
 .pv-post-like{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:30px;border:1px solid rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.12);color:var(--text);font-family:var(--font-display);font-size:.8rem;letter-spacing:1.5px;transition:all .2s;margin-top:14px;cursor:pointer}
 .pv-post-like:hover{background:rgba(var(--accent-rgb),.3)}
 .pv-post-like.liked{background:linear-gradient(135deg,#ff2ecc,#ff6b4a);color:#fff;border-color:transparent;box-shadow:0 0 20px rgba(255,80,180,.7)}
@@ -587,6 +582,79 @@ html[data-theme="lab"] .shop-item{background:rgba(255,255,255,.75)}
 .collection-chip{padding:6px 14px;border-radius:20px;background:rgba(var(--accent-rgb),.12);border:1px solid rgba(var(--accent-rgb),.4);font-family:var(--font-display);font-size:.68rem;letter-spacing:1.5px;color:var(--text);cursor:pointer;transition:all .2s}
 .collection-chip:hover{background:rgba(var(--accent-rgb),.3);transform:translateY(-2px)}
 .collection-chip.active{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;border-color:transparent;box-shadow:0 0 20px rgba(255,200,0,.7)}
+/* ============ РОЛИ v2 ============ */
+.badge-role{display:inline-block;padding:2px 8px;border-radius:12px;font-family:var(--font-display);font-size:.58rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-left:6px;vertical-align:middle}
+.badge-role.GLOBAL_ADMIN{background:linear-gradient(135deg,#610000,#8b0000);color:#fff;box-shadow:0 0 12px rgba(97,0,0,.6)}
+.badge-role.OWNER{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;box-shadow:0 0 12px rgba(255,200,0,.7)}
+.badge-role.SENIOR_ADMIN{background:linear-gradient(135deg,#a80000,#d82b2b);color:#fff;box-shadow:0 0 12px rgba(168,0,0,.6)}
+.badge-role.ADMIN{background:linear-gradient(135deg,#d82b2b,#ff4a4a);color:#fff;box-shadow:0 0 12px rgba(216,43,43,.6)}
+.badge-role.GLOBAL_MODERATOR{background:linear-gradient(135deg,#015469,#0097bd);color:#fff;box-shadow:0 0 12px rgba(1,84,105,.6)}
+.badge-role.SENIOR_MODERATOR{background:linear-gradient(135deg,#0097bd,#4a9bff);color:#fff;box-shadow:0 0 12px rgba(0,151,189,.6)}
+.badge-role.MODERATOR{background:linear-gradient(135deg,#4a9bff,#7eb8ff);color:#fff;box-shadow:0 0 12px rgba(74,155,255,.6)}
+.badge-role.SUPPORT{background:linear-gradient(135deg,#ababab,#d5d5d5);color:#222;box-shadow:0 0 12px rgba(171,171,171,.6)}
+.badge-role.USER{display:none}
+
+/* Кнопка "+N ролей" */
+.roles-more{display:inline-block;padding:2px 8px;border-radius:12px;background:rgba(var(--accent-rgb),.2);border:1px solid rgba(var(--accent-rgb),.5);color:var(--accent-soft);font-family:var(--font-display);font-size:.58rem;font-weight:900;letter-spacing:1px;cursor:pointer;margin-left:4px;transition:all .2s;vertical-align:middle;position:relative}
+.roles-more:hover{background:rgba(var(--accent-rgb),.4);color:#fff}
+.roles-tooltip{position:absolute;top:100%;left:0;margin-top:8px;padding:10px 14px;background:linear-gradient(160deg,rgba(30,18,70,.98),rgba(15,8,40,.98));border:1px solid rgba(var(--accent-rgb),.6);border-radius:12px;box-shadow:0 0 30px rgba(var(--accent-rgb),.6);display:flex;flex-direction:column;gap:6px;z-index:1000;min-width:180px;opacity:0;visibility:hidden;transform:translateY(-6px);transition:all .25s}
+.roles-more:hover .roles-tooltip{opacity:1;visibility:visible;transform:translateY(0)}
+.roles-tooltip .rt-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-family:var(--font-display);font-size:.58rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+
+/* Модалка "Управление ролями" */
+.roles-list{display:flex;flex-direction:column;gap:8px;margin:16px 0;max-height:400px;overflow-y:auto;padding-right:4px}
+.role-checkbox{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(var(--accent-rgb),.06);border:1px solid rgba(var(--accent-rgb),.2);cursor:pointer;transition:all .2s;user-select:none}
+.role-checkbox:hover{background:rgba(var(--accent-rgb),.15);border-color:var(--accent-soft)}
+.role-checkbox.checked{background:linear-gradient(135deg,rgba(var(--accent-rgb),.2),rgba(var(--accent-rgb),.08));border-color:rgba(var(--accent-rgb),.6)}
+.role-checkbox.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.role-checkbox input[type="checkbox"]{display:none}
+.role-checkbox .rc-check{width:22px;height:22px;border-radius:6px;border:2px solid rgba(var(--accent-rgb),.4);display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#fff;flex-shrink:0;transition:all .2s}
+.role-checkbox.checked .rc-check{background:linear-gradient(135deg,var(--accent-3),var(--accent-1));border-color:var(--accent-soft)}
+.role-checkbox .rc-name{font-family:var(--font-display);font-size:.78rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;flex:1}
+.role-checkbox .rc-color{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.3);flex-shrink:0}
+.role-checkbox .rc-lock{font-size:.85rem;opacity:.6}
+
+/* Модалка "Поиск юзеров" */
+.users-search-input{width:100%;padding:12px 18px;border-radius:30px;border:1px solid rgba(var(--accent-rgb),.4);background:rgba(0,0,0,.3);color:var(--text);font-family:var(--font-body);font-size:.95rem;outline:none;transition:all .25s;margin-bottom:16px}
+html[data-theme="lab"] .users-search-input{background:rgba(255,255,255,.9)}
+.users-search-input:focus{border-color:var(--accent-soft);box-shadow:0 0 22px rgba(var(--accent-rgb),.5)}
+.users-list{display:flex;flex-direction:column;gap:10px;max-height:400px;overflow-y:auto;padding-right:4px}
+.user-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:rgba(var(--accent-rgb),.06);border:1px solid rgba(var(--accent-rgb),.2);cursor:pointer;transition:all .2s}
+.user-item:hover{background:rgba(var(--accent-rgb),.18);border-color:var(--accent-soft);transform:translateX(4px)}
+.user-item img{width:40px;height:40px;border-radius:50%;border:2px solid var(--accent-soft);flex-shrink:0}
+.user-item .ui-body{flex:1;min-width:0}
+.user-item .ui-name{font-family:var(--font-display);font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.user-item .ui-roles{display:flex;flex-wrap:wrap;gap:4px}
+.user-item .ui-coins{font-family:var(--font-display);font-size:.72rem;color:#ffd700;flex-shrink:0}
+
+/* Журнал ролей */
+.role-logs-list{display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto;padding-right:4px}
+.role-log{padding:12px 14px;border-radius:12px;background:rgba(var(--accent-rgb),.06);border:1px solid rgba(var(--accent-rgb),.2);font-size:.85rem}
+.role-log .rl-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;font-family:var(--font-display);font-size:.72rem;letter-spacing:1px}
+.role-log .rl-actor{color:var(--accent-soft);font-weight:700}
+.role-log .rl-target{color:#ffd700;font-weight:700}
+.role-log .rl-time{margin-left:auto;color:var(--text-dim);font-size:.65rem}
+.role-log .rl-changes{display:flex;flex-wrap:wrap;gap:6px}
+.role-log .rl-add{padding:2px 8px;border-radius:10px;background:rgba(80,220,140,.15);border:1px solid rgba(80,220,140,.5);color:#7dffab;font-size:.7rem;font-family:var(--font-display);font-weight:700}
+.role-log .rl-rem{padding:2px 8px;border-radius:10px;background:rgba(255,80,80,.15);border:1px solid rgba(255,80,80,.5);color:#ff8080;font-size:.7rem;font-family:var(--font-display);font-weight:700}
+
+/* Кнопки управления ролями */
+.manage-roles-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:30px;border:1px solid rgba(var(--accent-rgb),.5);background:linear-gradient(135deg,#610000,#8b0000);color:#fff;font-family:var(--font-display);font-size:.72rem;letter-spacing:2px;text-transform:uppercase;font-weight:700;cursor:pointer;transition:all .25s;margin-top:14px}
+.manage-roles-btn:hover{box-shadow:0 0 25px rgba(139,0,0,.8);transform:translateY(-2px)}
+
+/* Профиль: секция ролей */
+.profile-roles{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.profile-roles .badge-role{margin-left:0;font-size:.62rem;padding:3px 10px}
+
+/* Модалка выдачи — большие чекбоксы */
+.roles-modal-actions{display:flex;gap:10px;margin-top:16px}
+.roles-modal-actions .close{margin-top:0;flex:1}
+.roles-modal-actions .close.primary{background:linear-gradient(135deg,#610000,#8b0000) !important;border-color:rgba(139,0,0,.7) !important}
+.roles-modal-actions .close.primary:hover{box-shadow:0 0 30px rgba(139,0,0,.9) !important}
+
+/* Иконка поиска юзеров и журнала в топбаре */
+.search-users-btn,.role-logs-btn{position:relative;width:34px;height:34px;border-radius:50%;border:1px solid rgba(var(--accent-rgb),.4);background:rgba(var(--accent-rgb),.08);color:var(--text);font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:all .25s;cursor:pointer}
+.search-users-btn:hover,.role-logs-btn:hover{background:rgba(var(--accent-rgb),.25);box-shadow:0 0 20px rgba(var(--accent-rgb),.6);transform:scale(1.1)}
 </style>
 </head>
 <body>
@@ -630,6 +698,8 @@ html[data-theme="lab"] .shop-item{background:rgba(255,255,255,.75)}
       <div class="dot" data-t="cyberpunk"></div>
       <div class="dot" data-t="toxic"></div>
     </div>
+    <button class="search-users-btn" id="searchUsersBtn" title="Поиск юзеров" style="display:none;">🔍</button>
+<button class="role-logs-btn" id="roleLogsBtn" title="Журнал ролей" style="display:none;">📜</button>
     <button class="notif-btn" id="notifBtn" title="Уведомления" style="display:none;">🔔<span class="notif-count" id="notifCount" style="display:none;">0</span></button>
     <div class="auth-block" id="authBlock"></div>
     <button class="icon-btn" id="musicBtn">🔇</button>
@@ -1141,6 +1211,41 @@ html[data-theme="lab"] .shop-item{background:rgba(255,255,255,.75)}
   </div>
 </div>
 
+<!-- Модалка: Управление ролями -->
+<div class="modal" id="modal-manage-roles">
+  <div class="modal-content" style="max-width:600px;">
+    <h3>🎭 Управление ролями</h3>
+    <div id="mrUserInfo" style="text-align:center;margin-bottom:8px;"></div>
+    <div class="roles-list" id="mrRolesList"></div>
+    <div class="roles-modal-actions">
+      <button class="close" onclick="closeModal()">Отмена</button>
+      <button class="close primary" id="mrSaveBtn">💾 Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка: Поиск юзеров -->
+<div class="modal" id="modal-search-users">
+  <div class="modal-content" style="max-width:560px;">
+    <h3>🔍 Поиск юзеров</h3>
+    <input type="text" class="users-search-input" id="suSearchInput" placeholder="Введи ник (мин 2 символа)..." autocomplete="off">
+    <div class="users-list" id="suList">
+      <div class="notif-empty">Начни вводить ник</div>
+    </div>
+    <button class="close" onclick="closeModal()" style="margin-top:14px;">Закрыть</button>
+  </div>
+</div>
+
+<!-- Модалка: Журнал ролей -->
+<div class="modal" id="modal-role-logs">
+  <div class="modal-content" style="max-width:640px;">
+    <h3>📜 Журнал ролей</h3>
+    <div class="role-logs-list" id="rlList">
+      <div class="notif-empty">Загрузка...</div>
+    </div>
+    <button class="close" onclick="closeModal()" style="margin-top:14px;">Закрыть</button>
+  </div>
+</div>
 <div class="modal" id="modal-notifications">
   <div class="modal-content" style="max-width:600px;">
     <h3>🔔 Уведомления</h3>
@@ -2016,12 +2121,67 @@ function renderAuthBlock() {
 function loginWithDiscord() { window.location.href = '/api/auth/login'; }
 function logout() { window.location.href = '/api/auth/logout'; }
 
-function getDisplayRole(role) {
-if (role === 'OWNER') return { main: 'ADMIN', sub: 'Владелец программы/сайта' };
-  if (role === 'ADMIN') return { main: 'ADMIN', sub: null };
-  if (role === 'SENIOR_MODERATOR') return { main: 'SENIOR_MODERATOR', sub: null };
-  if (role === 'MODERATOR') return { main: 'MODERATOR', sub: null };
-  return { main: 'USER', sub: null };
+/* ============================================================
+   РОЛИ
+============================================================ */
+const ROLE_INFO = {
+  GLOBAL_ADMIN:     { name: 'Гл. Администратор', color: '#610000', priority: 1, level: 90 },
+  OWNER:            { name: 'Владелец',          color: '#ffd700', priority: 2, level: 100 },
+  SENIOR_ADMIN:     { name: 'Ст. Администратор', color: '#a80000', priority: 3, level: 80 },
+  ADMIN:            { name: 'Администратор',     color: '#d82b2b', priority: 4, level: 70 },
+  GLOBAL_MODERATOR: { name: 'Гл. Модератор',     color: '#015469', priority: 5, level: 60 },
+  SENIOR_MODERATOR: { name: 'Ст. Модератор',     color: '#0097bd', priority: 6, level: 50 },
+  MODERATOR:        { name: 'Модератор',         color: '#4a9bff', priority: 7, level: 40 },
+  SUPPORT:          { name: 'Тех. Поддержка',    color: '#ababab', priority: 8, level: 30 },
+  USER:             { name: 'Пользователь',      color: null,      priority: 99, level: 10 }
+};
+const ROLE_ORDER = ['GLOBAL_ADMIN','OWNER','SENIOR_ADMIN','ADMIN','GLOBAL_MODERATOR','SENIOR_MODERATOR','MODERATOR','SUPPORT'];
+
+function sortRoles(roles) {
+  if (!roles || roles.length === 0) return [];
+  return roles.slice().sort((a, b) => {
+    const pa = (ROLE_INFO[a] && ROLE_INFO[a].priority) || 99;
+    const pb = (ROLE_INFO[b] && ROLE_INFO[b].priority) || 99;
+    return pa - pb;
+  });
+}
+
+function hasRole(role) {
+  if (!currentUser || !currentUser.roles) return false;
+  return currentUser.roles.indexOf(role) !== -1;
+}
+function hasAnyRole(roles) {
+  if (!currentUser || !currentUser.roles) return false;
+  return roles.some(r => currentUser.roles.indexOf(r) !== -1);
+}
+function canModerate()  { return hasAnyRole(['OWNER','GLOBAL_ADMIN','SENIOR_ADMIN','ADMIN','GLOBAL_MODERATOR','SENIOR_MODERATOR','MODERATOR']); }
+function canPostNews()  { return hasAnyRole(['OWNER','GLOBAL_ADMIN','SENIOR_ADMIN','ADMIN']); }
+function isAdmin()      { return hasAnyRole(['OWNER','GLOBAL_ADMIN','SENIOR_ADMIN','ADMIN']); }
+function isStaff()      { return canModerate() || hasRole('SUPPORT'); }
+function canManageRoles() { return hasAnyRole(['OWNER','GLOBAL_ADMIN']); }
+
+/* Отображение бейджей ролей: главная + "+N" */
+function renderRoleBadges(roles) {
+  if (!roles || roles.length === 0) return '';
+  const sorted = sortRoles(roles);
+  if (sorted.length === 0) return '';
+
+  const main = sorted[0];
+  const mainInfo = ROLE_INFO[main];
+  if (!mainInfo || main === 'USER') return '';
+
+  let html = `<span class="badge-role ${main}">${mainInfo.name}</span>`;
+
+  if (sorted.length > 1) {
+    const rest = sorted.slice(1);
+    const tooltip = rest.map(r => {
+      const info = ROLE_INFO[r];
+      if (!info || r === 'USER') return '';
+      return `<span class="rt-badge badge-role ${r}" style="margin-left:0;">${info.name}</span>`;
+    }).join('');
+    html += `<span class="roles-more">+${rest.length}<span class="roles-tooltip">${tooltip}</span></span>`;
+  }
+  return html;
 }
 function roleLabel(role) {
   return {
@@ -2039,17 +2199,18 @@ function openProfile() {
     : `https://cdn.discordapp.com/embed/avatars/${parseInt(currentUser.id) % 5}.png`;
   document.getElementById('pAvatar').src = avatarUrl;
   document.getElementById('pUsername').textContent = currentUser.username;
-  const roleEl = document.getElementById('pRole');
-  const subEl = document.getElementById('pRoleSub');
-  const disp = getDisplayRole(currentUser.role);
-  roleEl.textContent = roleLabel(disp.main);
-  roleEl.className = 'profile-role role-' + disp.main;
-  if (disp.sub) {
-    subEl.style.display = 'block';
-    subEl.textContent = disp.sub;
+
+  const rolesList = document.getElementById('pRolesList');
+  rolesList.innerHTML = renderRoleBadges(currentUser.roles || []);
+
+  const manageBtn = document.getElementById('pManageRoles');
+  if (canManageRoles()) {
+    manageBtn.style.display = 'inline-flex';
+    manageBtn.onclick = () => openManageRoles(currentUser.id, currentUser.username);
   } else {
-    subEl.style.display = 'none';
+    manageBtn.style.display = 'none';
   }
+
   document.getElementById('pCoins').textContent = currentUser.coins || 0;
   document.getElementById('pId').textContent = currentUser.id;
   openModal('profile');
@@ -2085,7 +2246,7 @@ function isAdmin(role) { return ['OWNER', 'ADMIN'].includes(role); }
 function updateNewPostForm() {
   const newsOption = document.getElementById('npNewsOption');
   if (!newsOption) return;
-  if (currentUser && canPostNews(currentUser.role)) {
+  if (canPostNews()) {
     newsOption.style.display = '';
   } else {
     newsOption.style.display = 'none';
@@ -2160,12 +2321,11 @@ function renderPosts() {
     const frameClass = p.authorActiveFrame ? 'frame-' + p.authorActiveFrame : '';
     const colorClass = p.authorActiveColor ? 'name-color-' + p.authorActiveColor : '';
     const titleHtml = p.authorActiveTitle ? `<span class="user-title title-${p.authorActiveTitle}">${titleLabel(p.authorActiveTitle)}</span>` : '';
-    const disp = getDisplayRole(p.authorRole || 'USER');
-    const roleBadge = disp.main !== 'USER' ? `<span class="badge-role ${disp.main}">${roleLabel(disp.main)}</span>` : '';
+    const roleBadge = renderRoleBadges(p.authorRoles || []);
     const isAuthor = currentUser && currentUser.id === p.authorId;
-    const canEdit = isAuthor || (currentUser && canModerate(currentUser.role));
-    const canDel = isAuthor || (currentUser && canModerate(currentUser.role));
-    const canPin = currentUser && isAdmin(currentUser.role);
+    const canEdit = isAuthor || canModerate();
+    const canDel = isAuthor || canModerate();
+    const canPin = isAdmin();
     let actions = '';
     if (canEdit || canDel || canPin) {
       actions = '<div class="pc-actions" onclick="event.stopPropagation();">';
@@ -2368,8 +2528,7 @@ async function openPost(id) {
     const frameClass = p.authorActiveFrame ? 'frame-' + p.authorActiveFrame : '';
     const colorClass = p.authorActiveColor ? 'name-color-' + p.authorActiveColor : '';
     const titleHtml = p.authorActiveTitle ? `<span class="user-title title-${p.authorActiveTitle}">${titleLabel(p.authorActiveTitle)}</span>` : '';
-    const disp = getDisplayRole(p.authorRole || 'USER');
-    const roleBadge = disp.main !== 'USER' ? `<span class="badge-role ${disp.main}">${roleLabel(disp.main)}</span>` : '';
+    const roleBadge = renderRoleBadges(p.authorRoles || []);
     const liked = p.likedByMe ? 'liked' : '';
     const isAuthor = currentUser && currentUser.id === p.authorId;
     const canEdit = isAuthor || (currentUser && canModerate(currentUser.role));
@@ -2409,8 +2568,7 @@ async function openPost(id) {
       const rFrameClass = rp.authorActiveFrame ? 'frame-' + rp.authorActiveFrame : '';
       const rColorClass = rp.authorActiveColor ? 'name-color-' + rp.authorActiveColor : '';
       const rTitleHtml = rp.authorActiveTitle ? `<span class="user-title title-${rp.authorActiveTitle}">${titleLabel(rp.authorActiveTitle)}</span>` : '';
-      const rDisp = getDisplayRole(rp.authorRole || 'USER');
-      const rBadge = rDisp.main !== 'USER' ? `<span class="badge-role ${rDisp.main}">${roleLabel(rDisp.main)}</span>` : '';
+      const rBadge = renderRoleBadges(rp.authorRoles || []);
       const rLiked = rp.likedByMe ? 'liked' : '';
       const rIsAuthor = currentUser && currentUser.id === rp.authorId;
       const rCanEdit = rIsAuthor || (currentUser && canModerate(currentUser.role));
@@ -2851,6 +3009,223 @@ window.openProfile = function() {
   setTimeout(() => {
     if (typeof renderMyCollection === 'function') renderMyCollection();
   }, 200);
+};
+/* ============================================================
+   УПРАВЛЕНИЕ РОЛЯМИ
+============================================================ */
+let currentRoleTarget = { id: null, username: null, roles: [] };
+
+async function openManageRoles(userId, username) {
+  if (!canManageRoles()) { showToast('Только для Владельца и ГЛ. Администратора', '🔒'); return; }
+  try {
+    const r = await fetch('/api/users/' + userId);
+    if (!r.ok) { showToast('Юзер не найден', '⚠️'); return; }
+    const data = await r.json();
+    currentRoleTarget = { id: userId, username: data.username, roles: data.roles || [] };
+    renderManageRolesModal();
+    openModal('manage-roles');
+  } catch (err) { showToast('Ошибка', '⚠️'); }
+}
+
+function renderManageRolesModal() {
+  const info = document.getElementById('mrUserInfo');
+  const avatar = currentRoleTarget.id === (currentUser && currentUser.id)
+    ? (currentUser.avatar ? `https://cdn.discordapp.com/avatars/${currentRoleTarget.id}/${currentUser.avatar}.png?size=64` : `https://cdn.discordapp.com/embed/avatars/${parseInt(currentRoleTarget.id) % 5}.png`)
+    : `https://cdn.discordapp.com/embed/avatars/${parseInt(currentRoleTarget.id) % 5}.png`;
+
+  info.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;justify-content:center;padding:12px;background:rgba(var(--accent-rgb),.08);border-radius:14px;border:1px solid rgba(var(--accent-rgb),.25);">
+      <img src="${avatar}" style="width:48px;height:48px;border-radius:50%;border:2px solid var(--accent-soft);">
+      <div style="text-align:left;">
+        <div style="font-family:var(--font-display);font-size:.9rem;color:var(--text);font-weight:700;">${escapeHtml(currentRoleTarget.username)}</div>
+        <div style="font-size:.72rem;color:var(--text-dim);letter-spacing:1.5px;">${currentRoleTarget.id}</div>
+      </div>
+    </div>
+  `;
+
+  const list = document.getElementById('mrRolesList');
+  const amOwner = hasRole('OWNER');
+  const myLevel = currentUser ? Math.max(...(currentUser.roles || ['USER']).map(r => (ROLE_INFO[r] && ROLE_INFO[r].level) || 0)) : 0;
+
+  const canToggle = (role) => {
+    if (role === 'USER') return false;
+    if (currentRoleTarget.id === (currentUser && currentUser.id)) return false;
+    if (currentRoleTarget.id === '1538217997532008499' && role === 'OWNER') return false;
+    if (amOwner) return true;
+    if (role === 'OWNER' || role === 'GLOBAL_ADMIN') return false;
+    const rLevel = (ROLE_INFO[role] && ROLE_INFO[role].level) || 0;
+    if (rLevel >= myLevel) return false;
+    return true;
+  };
+
+  const ownRoles = currentRoleTarget.roles || [];
+  list.innerHTML = ROLE_ORDER.map(role => {
+    const info = ROLE_INFO[role];
+    const checked = ownRoles.indexOf(role) !== -1;
+    const disabled = !canToggle(role);
+    return `
+      <div class="role-checkbox ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}" data-role="${role}">
+        <div class="rc-check">${checked ? '✓' : ''}</div>
+        <span class="rc-name">${info.name}</span>
+        <span class="rc-color" style="background:${info.color || '#999'};"></span>
+        ${disabled ? '<span class="rc-lock">🔒</span>' : ''}
+      </div>
+    `;
+  }).join('');
+
+  list.querySelectorAll('.role-checkbox').forEach(el => {
+    if (el.classList.contains('disabled')) return;
+    el.addEventListener('click', () => {
+      const role = el.dataset.role;
+      const has = currentRoleTarget.roles.indexOf(role) !== -1;
+      if (has) {
+        currentRoleTarget.roles = currentRoleTarget.roles.filter(r => r !== role);
+        el.classList.remove('checked');
+        el.querySelector('.rc-check').textContent = '';
+      } else {
+        currentRoleTarget.roles.push(role);
+        el.classList.add('checked');
+        el.querySelector('.rc-check').textContent = '✓';
+      }
+    });
+  });
+}
+
+document.getElementById('mrSaveBtn').addEventListener('click', async () => {
+  if (!currentRoleTarget.id) return;
+  try {
+    const r = await fetch('/api/users/' + currentRoleTarget.id + '/roles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roles: currentRoleTarget.roles })
+    });
+    const data = await r.json();
+    if (r.ok && data.success) {
+      showToast('✅ Роли обновлены', '🎭');
+      closeModal();
+      checkAuth();
+      loadPosts();
+    } else {
+      showToast(data.error || 'Ошибка', '⚠️');
+    }
+  } catch (err) { showToast('Ошибка', '⚠️'); }
+});
+
+/* ============================================================
+   ПОИСК ЮЗЕРОВ
+============================================================ */
+document.getElementById('searchUsersBtn').addEventListener('click', () => {
+  if (!isStaff()) { showToast('Только для стаффа', '🔒'); return; }
+  openModal('search-users');
+  document.getElementById('suSearchInput').focus();
+  document.getElementById('suList').innerHTML = '<div class="notif-empty">Начни вводить ник</div>';
+});
+
+let searchUsersTimer;
+document.getElementById('suSearchInput').addEventListener('input', function() {
+  clearTimeout(searchUsersTimer);
+  const q = this.value.trim();
+  if (q.length < 2) {
+    document.getElementById('suList').innerHTML = '<div class="notif-empty">Минимум 2 символа</div>';
+    return;
+  }
+  searchUsersTimer = setTimeout(() => doSearchUsers(q), 400);
+});
+
+async function doSearchUsers(q) {
+  const list = document.getElementById('suList');
+  list.innerHTML = '<div class="notif-empty">Поиск...</div>';
+  try {
+    const r = await fetch('/api/users/search?q=' + encodeURIComponent(q));
+    const data = await r.json();
+    if (!data.users || data.users.length === 0) {
+      list.innerHTML = '<div class="notif-empty">Никого не найдено</div>';
+      return;
+    }
+    list.innerHTML = data.users.map(u => {
+      const avatar = u.avatar
+        ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=64`
+        : `https://cdn.discordapp.com/embed/avatars/${parseInt(u.id) % 5}.png`;
+      const badges = renderRoleBadges(u.roles || []);
+      return `
+        <div class="user-item" onclick="openUserFromSearch('${u.id}', '${escapeHtml(u.username).replace(/'/g, "&#39;")}')">
+          <img src="${avatar}" alt="">
+          <div class="ui-body">
+            <div class="ui-name">${escapeHtml(u.username)}</div>
+            <div class="ui-roles">${badges}</div>
+          </div>
+          <div class="ui-coins">💰 ${u.coins || 0}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    list.innerHTML = '<div class="notif-empty">Ошибка поиска</div>';
+  }
+}
+
+function openUserFromSearch(userId, username) {
+  closeModal();
+  setTimeout(() => openManageRoles(userId, username), 300);
+}
+
+/* ============================================================
+   ЖУРНАЛ РОЛЕЙ
+============================================================ */
+document.getElementById('roleLogsBtn').addEventListener('click', async () => {
+  if (!canManageRoles()) { showToast('Только для Владельца и ГЛ. Администратора', '🔒'); return; }
+  openModal('role-logs');
+  const list = document.getElementById('rlList');
+  list.innerHTML = '<div class="notif-empty">Загрузка...</div>';
+  try {
+    const r = await fetch('/api/roles/log');
+    const data = await r.json();
+    if (!r.ok) { list.innerHTML = '<div class="notif-empty">Ошибка</div>'; return; }
+    if (!data.logs || data.logs.length === 0) {
+      list.innerHTML = '<div class="notif-empty">📜 Пока никто не менял роли</div>';
+      return;
+    }
+    list.innerHTML = data.logs.map(log => {
+      const added = (log.added || []).map(r => `<span class="rl-add">+ ${(ROLE_INFO[r] && ROLE_INFO[r].name) || r}</span>`).join('');
+      const removed = (log.removed || []).map(r => `<span class="rl-rem">− ${(ROLE_INFO[r] && ROLE_INFO[r].name) || r}</span>`).join('');
+      return `
+        <div class="role-log">
+          <div class="rl-head">
+            <span class="rl-actor">${escapeHtml(log.actorUsername)}</span>
+            <span style="color:var(--text-dim);">→</span>
+            <span class="rl-target">${escapeHtml(log.targetUsername)}</span>
+            <span class="rl-time">${timeAgo(log.timestamp)}</span>
+          </div>
+          <div class="rl-changes">${added}${removed}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    list.innerHTML = '<div class="notif-empty">Ошибка загрузки</div>';
+  }
+});
+
+/* Кнопки в топбаре: показываем только стаффу */
+function updateStaffButtons() {
+  const searchBtn = document.getElementById('searchUsersBtn');
+  const logsBtn = document.getElementById('roleLogsBtn');
+  if (!searchBtn || !logsBtn) return;
+  if (currentUser && isStaff()) {
+    searchBtn.style.display = 'flex';
+  } else {
+    searchBtn.style.display = 'none';
+  }
+  if (currentUser && canManageRoles()) {
+    logsBtn.style.display = 'flex';
+  } else {
+    logsBtn.style.display = 'none';
+  }
+}
+
+// Вызываем updateStaffButtons при каждой проверке авторизации
+const _origRenderAuthBlock = renderAuthBlock;
+renderAuthBlock = function() {
+  _origRenderAuthBlock();
+  updateStaffButtons();
 };
 
 /* СТАРТ */
